@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33103.184
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TranslatorGW", "TranslatorGW\TranslatorGW.csproj", "{29DC16A1-04DE-4FF2-B38F-9DFB83640C6F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{29DC16A1-04DE-4FF2-B38F-9DFB83640C6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29DC16A1-04DE-4FF2-B38F-9DFB83640C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29DC16A1-04DE-4FF2-B38F-9DFB83640C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29DC16A1-04DE-4FF2-B38F-9DFB83640C6F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E3DF82B3-FF60-4AF8-8E69-05051D03822E}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,21 @@
+{
+  "ModId": "guildwars.mod.translatorgw",
+  "ModName": "Translator GW",
+  "ModAuthor": "JPiolho",
+  "ModVersion": "1.0.0",
+  "ModDescription": "Allows you to add custom translations to the game",
+  "ModDll": "TranslatorGW.dll",
+  "ModIcon": "Preview.png",
+  "ModR2RManagedDll32": "x86/TranslatorGW.dll",
+  "ModR2RManagedDll64": "x64/TranslatorGW.dll",
+  "ModNativeDll32": "",
+  "ModNativeDll64": "",
+  "IsLibrary": false,
+  "ReleaseMetadataFileName": "TranslatorGW.ReleaseMetadata.json",
+  "PluginData": {},
+  "IsUniversalMod": false,
+  "ModDependencies": [ "reloaded.sharedlib.hooks", "Reloaded.Memory.SigScan.ReloadedII" ],
+  "OptionalDependencies": [],
+  "SupportedAppId": [ "gw.exe" ],
+  "ProjectUrl": ""
+}
