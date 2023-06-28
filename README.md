@@ -5,7 +5,7 @@
 Note that this mod is still very early in development
 
 # How to install
-Coming soon... If still not here, you could try installing it manually with Reloaded-II.
+Coming soon... If still not here, you could try installing it by compiling it and then manually with Reloaded-II.
 
 # How to use
 1. Create a language file with .csv format (Columns: StringId, OriginalText, Text, Ignored)

@@ -25,7 +25,6 @@ public class Config : Configurable<Config>
         The `DefaultValue` attribute is used as part of the `Reset` button in Reloaded-Launcher.
     */
 
-
     [Category("Languages")]
     [DisplayName("English override")]
     [Description("Override the English language with a custom language. Use the following format: <name>,<file>")]
@@ -92,6 +91,37 @@ public class Config : Configurable<Config>
     [DefaultValue("")]
     public string BorkBorkBorkOverride { get; set; } = "";
 
+    [Category("Debug")]
+    [DisplayName("Display translations verbose")]
+    [Description("Show in the Reloaded console what's being translated and so on")]
+    [DefaultValue(false)]
+    public bool TranslationVerbose { get; set; }
+
+    [Category("Debug")]
+    [DisplayName("Show StringId")]
+    [Description("If enabled, all strings will be provided with {<stringId>|<text>}")]
+    [DefaultValue(TranslationStringIdMode.Disabled)]
+    public TranslationStringIdMode TranslationStringId { get; set; }
+
+    [Category("Debug")]
+    [DisplayName("Save strings to SQLite")]
+    [Description("All strings that get attempted to get translated, will be saved to a SQLite database")]
+    [DefaultValue(false)]
+    public bool SQLiteEnable { get; set; }
+
+    [Category("Debug")]
+    [DisplayName("SQLite Path")]
+    [Description("Path for the SQLite database")]
+    [DefaultValue("")]
+    public string SQLitePath { get; set; } = "";
+
+
+    public enum TranslationStringIdMode
+    {
+        Disabled,
+        ShowAll,
+        ShowIfNotTranslated,
+    }
 }
 
 /// <summary>
