@@ -16,7 +16,7 @@ This is an example of how to download and load a custom language:
 4. Start Guild Wars with Reloaded and change to the language that you chose to override.
 
 <p align="center">
-  <img width="256" height="256" alt="Logo" src="https://github.com/jpiolho/TranslatorGW/blob/master/Docs/portuguese_example.jpg">
+  <img width="384" height="262" alt="Logo" src="https://github.com/jpiolho/TranslatorGW/blob/master/Docs/portuguese_example.jpg">
 </p>
 
 
