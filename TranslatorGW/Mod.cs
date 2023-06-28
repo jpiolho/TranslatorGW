@@ -197,7 +197,10 @@ public class Mod : ModBase // <= Do not Remove.
                         if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
                             (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && !translated)
                         )
-                            term = $"{{{stringId}|{term}}}";
+                        {
+                            if (term[0] != '[' && term[^1] != ']' && term[0] != '<' && term[^1] != '>')
+                                term = $"{{{stringId}|{term}}}";
+                        }
 
                         // If the term has changed, then we have to update the pointer
                         if (term != originalTerm)
