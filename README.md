@@ -36,3 +36,6 @@ Guild Wars translation engine contains special tokens to help with the grammar i
 ### Brackets
 * `[lbracket]` to add a `[`
 * `[rbracket]` to add a `]`
+
+### Others
+There's many others but they're not documented yet. Find them by trying out different languages and see how it handles the translation.
