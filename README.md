@@ -2,7 +2,8 @@
 <p align="center">A mod for Guild Wars 1 that allows you to use non-official custom languages</p>
 <p align="center">This mod uses <a href="https://github.com/Reloaded-Project/Reloaded-II">Reloaded-II</a></p>
 
-Note that this mod is in the alpha stage
+Note that this mod is in the alpha stage.
+If you find this project interesting, please help sharing it around as I'm terrible at doing this. Thank you!
 
 # How to install
 1. Download and install [Reloaded-II](https://github.com/Reloaded-Project/Reloaded-II) if you don't have it
