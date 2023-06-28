@@ -15,6 +15,11 @@ This is an example of how to download and load a custom language:
 3. Within Reloaded-II, edit the mod configuration and set a language override. Choose any language and type in: `Portuguese,Portuguese.csv`. Save and continue
 4. Start Guild Wars with Reloaded and change to the language that you chose to override.
 
+<p align="center">
+  <img width="256" height="256" alt="Logo" src="https://github.com/jpiolho/TranslatorGW/blob/main/Docs/portuguese_example.jpg">
+</p>
+
+
 # How to create a language file
 * In general, you can just see how the example language file is created and just add a string in each line. However I'd recommend going to the mod configurations and enable "Save strings to SQLite" and set a "SQLite Path".
 * Afterwards, when you play the game, whatever translation string the game decides to load will be saved into the sqlite database.
