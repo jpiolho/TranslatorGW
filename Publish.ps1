@@ -162,8 +162,8 @@ param (
     $UseScriptDirectory=$True,
 
     ## => User Config <= ## 
-    $ProjectPath = "GWReloaded.csproj",
-    $PackageName = "GWReloaded",
+    $ProjectPath = "TranslatorGW.csproj",
+    $PackageName = "TranslatorGW",
     $PublishOutputDir = "Publish/ToUpload",
 
     ## => User: Delta Config
@@ -180,7 +180,7 @@ param (
 
     $GameBananaItemId = 333681, # From mod page URL.
 
-    $NuGetPackageId = "GWReloaded",
+    $NuGetPackageId = "TranslatorGW",
     $NuGetFeedUrl = "http://packages.sewer56.moe:5000/v3/index.json",
     $NuGetAllowUnlisted = $False,
 
