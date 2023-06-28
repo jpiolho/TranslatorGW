@@ -14,6 +14,9 @@ on:
     tags:
       - '*'
   workflow_dispatch:
+  
+permissions:
+  contents: write
 
 env: 
   PUBLISH_COMMON_PATH: ./Publish/ToUpload/
