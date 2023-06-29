@@ -106,6 +106,20 @@ public class Mod : ModBase // <= Do not Remove.
 
     }
 
+    public override void Resume()
+    {
+        _hookStringParse?.Activate();
+    }
+
+    public override void Suspend()
+    {
+        _hookStringParse?.Disable();
+    }
+
+    public override void Disposing()
+    {
+        _translationSql?.Dispose();
+    }
     private void LoadLanguage(string? file)
     {
         _translationsById = new();
