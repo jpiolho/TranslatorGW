@@ -1,15 +1,14 @@
 ﻿using CsvHelper;
-using Microsoft.Data.Sqlite;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.X86;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using TranslatorGW.Configuration;
 using TranslatorGW.Template;
 
@@ -20,6 +19,8 @@ namespace TranslatorGW;
 /// </summary>
 public class Mod : ModBase // <= Do not Remove.
 {
+    private const int TranslationBufferSize = 1024 * 64; // 64kb
+
     [Function(CallingConventions.Cdecl)]
     private delegate IntPtr HookStringParse(IntPtr arg1, IntPtr arg2, int stringId, IntPtr replacementTerm, IntPtr arg5, IntPtr arg6, IntPtr arg7);
     private IHook<HookStringParse> _hookStringParse;
@@ -66,6 +67,8 @@ public class Mod : ModBase // <= Do not Remove.
     private CancellationTokenSource _cancelAllTasksCts;
     private Thread _threadDatabase;
     private ConcurrentQueue<DatabaseEntry> _databaseQueue;
+    private IntPtr _translationBuffer;
+
 
     public Mod(ModContext context)
     {
@@ -209,86 +212,101 @@ public class Mod : ModBase // <= Do not Remove.
         {
             if (_gwLanguage != (int*)0)
             {
-                lock (_lockObject)
+                // Did the language change?
+                if (_currentLanguage != *_gwLanguage)
                 {
-                    if (_currentLanguage != *_gwLanguage)
+                    _currentLanguage = *_gwLanguage;
+                    _logger.WriteLine($"Set new language: {_currentLanguage}");
+
+                    string? overrideFile = null;
+                    try
                     {
-                        _currentLanguage = *_gwLanguage;
-                        _logger.WriteLine($"Set new language: {_currentLanguage}");
-
-                        string? overrideFile = null;
-                        try
+                        overrideFile = GetOverrideLanguageFile(_currentLanguage switch
                         {
-                            overrideFile = GetOverrideLanguageFile(_currentLanguage switch
-                            {
-                                0 => _configuration.EnglishOverride,
-                                1 => _configuration.KoreanOverride,
-                                2 => _configuration.FrenchOverride,
-                                3 => _configuration.GermanOverride,
-                                4 => _configuration.ItalianOverride,
-                                5 => _configuration.SpanishOverride,
-                                6 => _configuration.TraditionalChineseOverride,
-                                9 => _configuration.PolishOverride,
-                                10 => _configuration.RussianOverride,
-                                17 => _configuration.BorkBorkBorkOverride,
-                                _ => null,
-                            });
+                            0 => _configuration.EnglishOverride,
+                            1 => _configuration.KoreanOverride,
+                            2 => _configuration.FrenchOverride,
+                            3 => _configuration.GermanOverride,
+                            4 => _configuration.ItalianOverride,
+                            5 => _configuration.SpanishOverride,
+                            6 => _configuration.TraditionalChineseOverride,
+                            9 => _configuration.PolishOverride,
+                            10 => _configuration.RussianOverride,
+                            17 => _configuration.BorkBorkBorkOverride,
+                            _ => null,
+                        });
 
-                            LoadLanguage(overrideFile);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.WriteLine($"Failed to load language file ({overrideFile}): {ex}", Color.Red);
-                        }
-
+                        LoadLanguage(overrideFile);
                     }
-                
-                    string? term = Marshal.PtrToStringUni(termPointer);
-                    string? originalTerm = term;
-                    if (term is not null)
+                    catch (Exception ex)
                     {
-                        // Are we saving translations into database?
-                        if (_databaseQueue is not null)
-                        {
-                            _databaseQueue.Enqueue(new DatabaseEntry()
-                            {
-                                LanguageId = _currentLanguage,
-                                StringId = stringId,
-                                Term = term
-                            });
-                        }
-
-                        bool translated = false;
-                        if (_translationsById.TryGetValue(stringId, out var translation))
-                        {
-                            term = translation;
-                            translated = true;
-
-                            if (_configuration.TranslationVerbose)
-                                _logger.WriteLine($"Translated {stringId}: {translation}");
-                        }
-                        else if (_configuration.TranslationVerbose)
-                            _logger.WriteLine($"Translation not found for {stringId}: {originalTerm}");
-
-                        if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
-                            (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && !translated)
-                        )
-                        {
-                            if (term[0] != '[' && term[^1] != ']' && term[0] != '<' && term[^1] != '>')
-                                term = $"{{{stringId}|{term}}}";
-                        }
-
-                        // If the term has changed, then we have to update the pointer
-                        if (term != originalTerm)
-                        {
-                            var encoded = Encoding.Unicode.GetBytes($"{term}\0");
-                            Marshal.Copy(encoded, 0, termPointer, encoded.Length);
-                        }
+                        _logger.WriteLine($"Failed to load language file ({overrideFile}): {ex}", Color.Red);
                     }
-                    else
+
+                }
+
+                string? term = Marshal.PtrToStringUni(termPointer);
+                string? originalTerm = term;
+                if (term is not null)
+                {
+                    // Are we saving translations into database?
+                    if (_databaseQueue is not null)
                     {
-                        _logger.WriteLine($"[WARNING] PtrToStringUni returned null for string {stringId}.", Color.Yellow);
+                        _databaseQueue.Enqueue(new DatabaseEntry()
+                        {
+                            LanguageId = _currentLanguage,
+                            StringId = stringId,
+                            Term = term
+                        });
                     }
+
+
+                    bool translated = false;
+
+                    // Check if there's a translation for this stringId
+                    if (_translationsById.TryGetValue(stringId, out var translation))
+                    {
+                        term = translation;
+                        translated = true;
+
+                        if (_configuration.TranslationVerbose)
+                            _logger.WriteLine($"Translated {stringId}: {translation}");
+                    }
+                    else if (_configuration.TranslationVerbose)
+                        _logger.WriteLine($"Translation not found for {stringId}: {originalTerm}");
+
+                    // Should we show stringId?
+                    if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
+                        (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && !translated)
+                    )
+                    {
+                        if (term[0] != '[' && term[^1] != ']' && term[0] != '<' && term[^1] != '>')
+                            term = $"{{{stringId}|{term}}}";
+                    }
+
+                    // If the term has changed, then we have some text to change
+                    if (term != originalTerm)
+                    {
+                        var encoded = Encoding.Unicode.GetBytes($"{term}\0");
+                        int encodedSize = encoded.Length;
+
+                        // Fail safe if somehow the buffer is bigger
+                        if (encodedSize >= TranslationBufferSize)
+                        {
+                            encoded[TranslationBufferSize - 1] = 0;
+                            encoded[TranslationBufferSize - 2] = 0;
+                            encodedSize = TranslationBufferSize;
+
+                            _logger.WriteLine($"WARNING: {stringId} translation overflows maximum translation buffer of {TranslationBufferSize} bytes. It has {encodedSize} bytes", Color.Yellow);
+                        }
+
+                        Marshal.Copy(encoded, 0, _translationBuffer, encodedSize);
+                        termPointer = _translationBuffer;
+                    }
+                }
+                else
+                {
+                    _logger.WriteLine($"[WARNING] PtrToStringUni returned null for string {stringId}.", Color.Yellow);
                 }
             }
         }
@@ -300,7 +318,7 @@ public class Mod : ModBase // <= Do not Remove.
         return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
     }
 
-    
+
 
     #region Standard Overrides
     public override void ConfigurationUpdated(Config configuration)
