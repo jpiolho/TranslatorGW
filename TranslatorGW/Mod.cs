@@ -115,20 +115,24 @@ public class Mod : ModBase // <= Do not Remove.
             _hookStringParse = _hooks.CreateHook<HookStringParse>(StringParseHandler, (long)offset).Activate();
         });
 
+        _logger.WriteLine("[TranslatorGW] Started", Color.Yellow);
     }
 
     public override void Resume()
     {
+        _logger.WriteLine("[TranslatorGW] Resuming...", Color.Yellow);
         _hookStringParse?.Activate();
     }
 
     public override void Suspend()
     {
+        _logger.WriteLine("[TranslatorGW] Suspending...", Color.Yellow);
         _hookStringParse?.Disable();
     }
 
     public override void Disposing()
     {
+        _logger.WriteLine("[TranslatorGW] Disposing...", Color.Yellow);
         _cancelAllTasksCts.Cancel();
     }
 
