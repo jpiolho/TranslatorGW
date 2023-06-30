@@ -37,7 +37,7 @@ public class TranslationsSQLite : IDisposable
     }
 
 
-    public void InsertTranslation(int languageId, int stringId, string text)
+    public async Task InsertTranslationAsync(int languageId, int stringId, string text, CancellationToken cancellationToken = default)
     {
         string insertDataQuery = @"INSERT OR IGNORE INTO Translation (LanguageId, StringId, Text) 
                            VALUES (@LanguageId, @StringId, @Text)";
@@ -48,7 +48,7 @@ public class TranslationsSQLite : IDisposable
             cmd.Parameters.AddWithValue("@StringId", stringId);
             cmd.Parameters.AddWithValue("@Text", text);
 
-            cmd.ExecuteNonQuery();
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
     }

@@ -63,7 +63,9 @@ public class Mod : ModBase // <= Do not Remove.
     private unsafe int* _gwLanguage = (int*)0;
     private int _currentLanguage = -1;
 
-    private TranslationsSQLite? _translationSql;
+    private CancellationTokenSource _cancelAllTasksCts;
+    private Thread _threadDatabase;
+    private ConcurrentQueue<DatabaseEntry> _databaseQueue;
 
     public Mod(ModContext context)
     {
@@ -81,8 +83,17 @@ public class Mod : ModBase // <= Do not Remove.
         if (!_modLoader.GetController<IStartupScanner>().TryGetTarget(out var scanner))
             throw new Exception("Failed to get scanner");
 
+        _cancelAllTasksCts = new CancellationTokenSource();
+
+
+        _translationBuffer = Marshal.AllocHGlobal(TranslationBufferSize);
+
         if (_configuration.SQLiteEnable)
-            _translationSql = new TranslationsSQLite(_configuration.SQLitePath);
+        {
+            _databaseQueue = new();
+            _threadDatabase = new Thread(ThreadDatabase);
+            _threadDatabase.Start(_cancelAllTasksCts.Token);
+        }
 
         // Find the global address for selected language
         scanner.AddMainModuleScan("8B 35 ?? ?? ?? ?? 83 C4 20 56", result =>
@@ -118,8 +129,47 @@ public class Mod : ModBase // <= Do not Remove.
 
     public override void Disposing()
     {
-        _translationSql?.Dispose();
+        _cancelAllTasksCts.Cancel();
     }
+
+    private async void ThreadDatabase(object? cancellationTokenObject)
+    {
+        if (cancellationTokenObject is null)
+            throw new ArgumentNullException(nameof(cancellationTokenObject));
+
+        var cancellationToken = (CancellationToken)cancellationTokenObject;
+
+        using var sql = new TranslationsSQLite(_configuration.SQLitePath);
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (
+                    !_databaseQueue.TryGetNonEnumeratedCount(out var count) ||  // Try get the count
+                    count == 0 || // No items in the queue
+                    !_databaseQueue.TryDequeue(out var entry) // Try get the item
+                )
+                {
+                    await Task.Delay(10);
+                    continue;
+                }
+
+                await sql.InsertTranslationAsync(entry.LanguageId, entry.StringId, entry.Term, cancellationToken);
+
+                _logger.WriteLine($"Inserted into database: {entry.LanguageId} | {entry.StringId} | {entry.Term}");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.WriteLine($"[ERROR] ThreadDatabase: {ex}", Color.Red);
+            }
+        }
+    }
+
     private void LoadLanguage(string? file)
     {
         _translationsById = new();
@@ -193,8 +243,16 @@ public class Mod : ModBase // <= Do not Remove.
                     string? originalTerm = term;
                     if (term is not null)
                     {
-                        if (_translationSql is not null)
-                            _translationSql.InsertTranslation(_currentLanguage, stringId, term);
+                        // Are we saving translations into database?
+                        if (_databaseQueue is not null)
+                        {
+                            _databaseQueue.Enqueue(new DatabaseEntry()
+                            {
+                                LanguageId = _currentLanguage,
+                                StringId = stringId,
+                                Term = term
+                            });
+                        }
 
                         bool translated = false;
                         if (_translationsById.TryGetValue(stringId, out var translation))
@@ -238,20 +296,7 @@ public class Mod : ModBase // <= Do not Remove.
         return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
     }
 
-    private class CsvRecord
-    {
-        public int? StringId { get; set; }
-        public string Text { get; set; }
-    }
-
-
-    private class Translation
-    {
-        public string Text { get; set; } = "";
-        public IntPtr Pointer { get; set; } = IntPtr.Zero;
-
-        public Translation(string text) { Text = text; }
-    }
+    
 
     #region Standard Overrides
     public override void ConfigurationUpdated(Config configuration)
