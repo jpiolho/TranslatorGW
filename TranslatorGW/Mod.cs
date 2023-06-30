@@ -230,9 +230,9 @@ public class Mod : ModBase // <= Do not Remove.
                 }
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            _logger.WriteLine("[ERROR] Exception when translating: {ex}");
+            _logger.WriteLine($"[ERROR] Exception when translating: {ex}");
         }
 
         return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
