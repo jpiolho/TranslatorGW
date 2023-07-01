@@ -259,26 +259,37 @@ public class Mod : ModBase // <= Do not Remove.
 
 
                 bool translated = false;
+                bool ignored = false;
 
                 // Check if there's a translation for this stringId
                 if (_translationsById.TryGetValue(stringId, out var translation))
                 {
-                    term = translation;
-                    translated = true;
+                    if (translation != "[ignore]")
+                    {
+                        term = translation;
+                        translated = true;
 
-                    if (_configuration.TranslationVerbose)
-                        _logger.Verbose($"Translated {stringId}: {translation}");
+                        _logger.Verbose(_configuration.TranslationVerbose, $"Translated {stringId}: {translation}");
+                    }
+                    else
+                    {
+                        ignored = true;
+                        _logger.Verbose(_configuration.TranslationVerbose, $"Translation ignored for {stringId}");
+                    }
                 }
-                else if (_configuration.TranslationVerbose)
-                    _logger.Verbose($"Translation not found for {stringId}: {originalTerm}");
+                else
+                {
+                    _logger.Verbose(_configuration.TranslationVerbose, $"Translation not found for {stringId}: {originalTerm}");
+                }
 
                 // Should we show stringId?
                 if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
-                    (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && !translated)
+                    (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && (!translated && !ignored))
                 )
                 {
                     term = $"{{{stringId}|{term}}}";
                 }
+
 
                 // If the term has changed, then we have some text to change
                 if (term != originalTerm)
@@ -312,7 +323,6 @@ public class Mod : ModBase // <= Do not Remove.
 
         return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
     }
-
 
 
     #region Standard Overrides

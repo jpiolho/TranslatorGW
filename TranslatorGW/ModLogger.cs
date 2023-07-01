@@ -1,5 +1,6 @@
 ﻿using Reloaded.Mod.Interfaces;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace TranslatorGW;
 
@@ -22,6 +23,13 @@ internal class ModLogger
     public void Verbose(string message)
     {
         _logger.WriteLine($"[{_modName}] {message}", Color.Gray);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Verbose(bool condition, string message)
+    {
+        if (condition)
+            Verbose(message);
     }
 
     public void Warning(string message)
