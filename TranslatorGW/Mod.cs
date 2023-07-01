@@ -40,7 +40,7 @@ public class Mod : ModBase // <= Do not Remove.
     /// <summary>
     /// Provides access to the Reloaded logger.
     /// </summary>
-    private readonly ILogger _logger;
+    private readonly ModLogger _logger;
 
     /// <summary>
     /// Entry point into the mod, instance that created this class.
@@ -74,7 +74,7 @@ public class Mod : ModBase // <= Do not Remove.
     {
         _modLoader = context.ModLoader;
         _hooks = context.Hooks;
-        _logger = context.Logger;
+        _logger = new ModLogger("TranslatorGW", context.Logger);
         _owner = context.Owner;
         _configuration = context.Configuration;
         _modConfig = context.ModConfig;
@@ -104,7 +104,8 @@ public class Mod : ModBase // <= Do not Remove.
             {
                 int offset = *(int*)(mainModule.BaseAddress + result.Offset + 2);
                 _gwLanguage = (int*)offset;
-                _logger.WriteLine($"LanguageGlobal: {(int)_gwLanguage:X8}");
+
+                _logger.Verbose($"LanguageGlobal: {(int)_gwLanguage:X8}");
             }
         });
 
@@ -113,29 +114,29 @@ public class Mod : ModBase // <= Do not Remove.
         {
             var offset = mainModule.BaseAddress + result.Offset;
 
-            _logger.WriteLine($"StringParse offset: {offset:X8}");
+            _logger.Verbose($"StringParse offset: {offset:X8}");
             _hookStringParse = _hooks.CreateHook<HookStringParse>(StringParseHandler, (long)offset).Activate();
         });
 
-        _logger.WriteLine("[TranslatorGW] Started", Color.Yellow);
+        _logger.Verbose("Started");
     }
 
 
     public override void Resume()
     {
-        _logger.WriteLine("[TranslatorGW] Resuming...", Color.Yellow);
+        _logger.Verbose("Resuming...");
         _hookStringParse?.Activate();
     }
 
     public override void Suspend()
     {
-        _logger.WriteLine("[TranslatorGW] Suspending...", Color.Yellow);
+        _logger.Verbose("Suspending...");
         _hookStringParse?.Disable();
     }
 
     public override void Disposing()
     {
-        _logger.WriteLine("[TranslatorGW] Disposing...", Color.Yellow);
+        _logger.Verbose("Disposing...");
         _cancelAllTasksCts.Cancel();
     }
 
@@ -159,7 +160,7 @@ public class Mod : ModBase // <= Do not Remove.
 
                 await sql.InsertTranslationAsync(entry.LanguageId, entry.StringId, entry.Term, cancellationToken);
 
-                _logger.WriteLine($"Inserted into database: {entry.LanguageId} | {entry.StringId} | {entry.Term}");
+                _logger.Verbose($"Inserted into database: {entry.LanguageId} | {entry.StringId} | {entry.Term}");
             }
             catch (OperationCanceledException)
             {
@@ -167,7 +168,7 @@ public class Mod : ModBase // <= Do not Remove.
             }
             catch (Exception ex)
             {
-                _logger.WriteLine($"[ERROR] ThreadDatabase: {ex}", Color.Red);
+                _logger.Error($"ThreadDatabase: {ex}");
             }
         }
     }
@@ -179,7 +180,7 @@ public class Mod : ModBase // <= Do not Remove.
         if (string.IsNullOrEmpty(file))
             return;
 
-        _logger.WriteLine($"Loading new language: {file}");
+        _logger.Log($"Loading new language: {file}");
 
         using (var reader = new StreamReader(file))
         using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
@@ -212,7 +213,7 @@ public class Mod : ModBase // <= Do not Remove.
             if (_currentLanguage != *_gwLanguage)
             {
                 _currentLanguage = *_gwLanguage;
-                _logger.WriteLine($"Set new language: {_currentLanguage}");
+                _logger.Log($"Set new language: {_currentLanguage}");
 
                 string? overrideFile = null;
                 try
@@ -236,7 +237,7 @@ public class Mod : ModBase // <= Do not Remove.
                 }
                 catch (Exception ex)
                 {
-                    _logger.WriteLine($"Failed to load language file ({overrideFile}): {ex}", Color.Red);
+                    _logger.Error($"Failed to load language file ({overrideFile}): {ex}");
                 }
 
             }
@@ -266,10 +267,10 @@ public class Mod : ModBase // <= Do not Remove.
                     translated = true;
 
                     if (_configuration.TranslationVerbose)
-                        _logger.WriteLine($"Translated {stringId}: {translation}");
+                        _logger.Verbose($"Translated {stringId}: {translation}");
                 }
                 else if (_configuration.TranslationVerbose)
-                    _logger.WriteLine($"Translation not found for {stringId}: {originalTerm}");
+                    _logger.Verbose($"Translation not found for {stringId}: {originalTerm}");
 
                 // Should we show stringId?
                 if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
@@ -293,7 +294,7 @@ public class Mod : ModBase // <= Do not Remove.
                         encoded[TranslationBufferSize - 2] = 0;
                         encodedSize = TranslationBufferSize;
 
-                        _logger.WriteLine($"WARNING: {stringId} translation overflows maximum translation buffer of {TranslationBufferSize} bytes. It has {encodedSize} bytes", Color.Yellow);
+                        _logger.Warning($"{stringId} translation overflows maximum translation buffer of {TranslationBufferSize} bytes. It has {encodedSize} bytes");
                     }
 
                     Marshal.Copy(encoded, 0, _translationBuffer, encodedSize);
@@ -302,12 +303,12 @@ public class Mod : ModBase // <= Do not Remove.
             }
             else
             {
-                _logger.WriteLine($"[WARNING] PtrToStringUni returned null for string {stringId}.", Color.Yellow);
+                _logger.Warning($"PtrToStringUni returned null for string {stringId}.");
             }
         }
         catch (Exception ex)
         {
-            _logger.WriteLine($"[ERROR] Exception when translating: {ex}");
+            _logger.Error($"Exception when translating: {ex}");
         }
 
         return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
@@ -321,7 +322,7 @@ public class Mod : ModBase // <= Do not Remove.
         // Apply settings from configuration.
         // ... your code here.
         _configuration = configuration;
-        _logger.WriteLine($"[{_modConfig.ModId}] Config Updated: Applying");
+        _logger.Log($"Config Updated: Applying");
     }
     #endregion
 
