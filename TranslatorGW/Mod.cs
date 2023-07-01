@@ -277,8 +277,7 @@ public class Mod : ModBase // <= Do not Remove.
                     (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && !translated)
                 )
                 {
-                    if (term[0] != '[' && term[^1] != ']' && term[0] != '<' && term[^1] != '>')
-                        term = $"{{{stringId}|{term}}}";
+                    term = $"{{{stringId}|{term}}}";
                 }
 
                 // If the term has changed, then we have some text to change
