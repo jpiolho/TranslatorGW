@@ -112,8 +112,8 @@ public class Config : Configurable<Config>
     [Category("Debug")]
     [DisplayName("SQLite Path")]
     [Description("Path for the SQLite database")]
-    [DefaultValue("")]
-    public string SQLitePath { get; set; } = "";
+    [DefaultValue("translations.sqlite")]
+    public string SQLitePath { get; set; } = "translations.sqlite";
 
 
     public enum TranslationStringIdMode
