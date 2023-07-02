@@ -243,7 +243,9 @@ public class Mod : ModBase // <= Do not Remove.
                     {
                         switch (TryTranslate(argStringId, null, out var subTranslation))
                         {
-                            case TranslationResult.Translated: replacement = subTranslation; break;
+                            case TranslationResult.Translated:
+                                replacement = subTranslation;
+                                break;
                             default:
                                 _logger.Warning($"The id for [id] replacement in string {stringId} is not valid.");
                                 break;
@@ -260,6 +262,7 @@ public class Mod : ModBase // <= Do not Remove.
             {
                 // Replace command with corresponding action's result
                 trans = trans.Remove(bracketStart, bracketEnd - bracketStart + 1).Insert(bracketStart, replacement);
+                bracketEnd = bracketStart-1; // Do some positional trickery to find the next [] properly
             }
         }
 
