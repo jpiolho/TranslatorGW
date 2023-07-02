@@ -5,7 +5,6 @@ using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -202,6 +201,74 @@ public class Mod : ModBase // <= Do not Remove.
         return configurationString.Split(",")[1];
     }
 
+
+    enum TranslationResult
+    {
+        NotFound,
+        Translated,
+        Ignored
+    }
+
+
+    private TranslationResult TryTranslate(int stringId, string? original, out string? translation)
+    {
+        translation = original;
+
+        // Check if there's a translation for this stringId
+        if (!_translationsById.TryGetValue(stringId, out var trans))
+            return TranslationResult.NotFound;
+
+        if (trans == "[ignore]")
+            return TranslationResult.Ignored;
+
+        // Run our own special string syntax parser
+        int bracketStart = -1;
+        int bracketEnd = -1;
+        while ((bracketStart = trans.IndexOf('[',bracketEnd+1)) != -1 && (bracketEnd = trans.IndexOf(']', bracketStart+1)) != -1)
+        {
+            // Extract command
+            string command = trans.Substring(bracketStart + 1, bracketEnd - bracketStart - 1);
+
+            // Extract command name
+            var split = command.Split(':');
+            string commandName = split[0];
+
+            string? replacement = null;
+            switch (commandName)
+            {
+                case "id":
+                    replacement = "";
+
+                    if (int.TryParse(split[1], out var argStringId))
+                    {
+                        switch (TryTranslate(argStringId, null, out var subTranslation))
+                        {
+                            case TranslationResult.Translated: replacement = subTranslation; break;
+                            default:
+                                _logger.Warning($"The id for [id] replacement in string {stringId} is not valid.");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        _logger.Warning($"Invalid id for [id] replacement in string {stringId}");
+                    }
+                    break;
+            }
+
+            if (replacement != null)
+            {
+                // Replace command with corresponding action's result
+                trans = trans.Remove(bracketStart, bracketEnd - bracketStart + 1).Insert(bracketStart, replacement);
+            }
+        }
+
+        translation = trans;
+
+        return TranslationResult.Translated;
+    }
+
+
     private unsafe IntPtr StringParseHandler(IntPtr arg1, IntPtr arg2, int stringId, IntPtr termPointer, IntPtr arg5, IntPtr arg6, IntPtr arg7)
     {
         try
@@ -242,6 +309,8 @@ public class Mod : ModBase // <= Do not Remove.
 
             }
 
+
+
             string? term = Marshal.PtrToStringUni(termPointer);
             string? originalTerm = term;
             if (term is not null)
@@ -257,34 +326,17 @@ public class Mod : ModBase // <= Do not Remove.
                     });
                 }
 
-
-                bool translated = false;
-                bool ignored = false;
-
-                // Check if there's a translation for this stringId
-                if (_translationsById.TryGetValue(stringId, out var translation))
+                var translationResult = TryTranslate(stringId, term, out term);
+                switch (translationResult)
                 {
-                    if (translation != "[ignore]")
-                    {
-                        term = translation;
-                        translated = true;
-
-                        _logger.Verbose(_configuration.TranslationVerbose, $"Translated {stringId}: {translation}");
-                    }
-                    else
-                    {
-                        ignored = true;
-                        _logger.Verbose(_configuration.TranslationVerbose, $"Translation ignored for {stringId}");
-                    }
-                }
-                else
-                {
-                    _logger.Verbose(_configuration.TranslationVerbose, $"Translation not found for {stringId}: {originalTerm}");
+                    case TranslationResult.Translated: _logger.Verbose(_configuration.TranslationVerbose, $"Translated {stringId}: {term}"); break;
+                    case TranslationResult.Ignored: _logger.Verbose(_configuration.TranslationVerbose, $"Translation ignored for {stringId}"); break;
+                    case TranslationResult.NotFound: _logger.Verbose(_configuration.TranslationVerbose, $"Translation not found for {stringId}: {originalTerm}"); break;
                 }
 
                 // Should we show stringId?
                 if (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowAll ||
-                    (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && (!translated && !ignored))
+                    (_configuration.TranslationStringId == Config.TranslationStringIdMode.ShowIfNotTranslated && translationResult == TranslationResult.NotFound)
                 )
                 {
                     term = $"{{{stringId}|{term}}}";
