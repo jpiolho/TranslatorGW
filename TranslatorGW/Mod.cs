@@ -273,7 +273,7 @@ public class Mod : ModBase // <= Do not Remove.
     {
         try
         {
-            if (_gwLanguage == (int*)0)
+            if (_gwLanguage == (int*)0 || termPointer == _translationBuffer)
                 return _hookStringParse.OriginalFunction(arg1, arg2, stringId, termPointer, arg5, arg6, arg7);
 
             // Did the language change?
