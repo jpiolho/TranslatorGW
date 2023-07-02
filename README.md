@@ -20,6 +20,8 @@ This is an example of how to download and load a custom language:
   <img width="384" height="262" alt="Logo" src="https://github.com/jpiolho/TranslatorGW/blob/master/Docs/portuguese_example.jpg">
 </p>
 
+# More languages
+See this repository: https://github.com/jpiolho/TranslatorGW-Translations
 
 # How to create a language file
 * In general, you can just see how the example language file is created and just add a string in each line. However I'd recommend going to the mod configurations and enable "Save strings to SQLite" and set a "SQLite Path".
